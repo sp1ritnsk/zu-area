@@ -39,6 +39,11 @@
               d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
           </svg>
         </button>
+        <button id="load-geojson" title="Загрузить GeoJSON">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+          </svg>
+        </button>
         <button id="clear-all" title="Очистить всё">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -46,6 +51,9 @@
           </svg>
         </button>
       </div>
+      
+      <!-- Hidden file input -->
+      <input type="file" id="geojson-input" accept=".geojson,.json" style="display: none;" />
       <div class="units-section">
         <label for="area-units">Единицы площади:</label>
         <select id="area-units">
@@ -69,9 +77,9 @@
 
   <div id="info" class="info-panel">
     <div class="info-content">
-      <p>Нажмите "Рисовать полигон" для начала рисования. Кликайте для добавления точек, двойной клик для завершения.
+      <p>Нажмите "Рисовать полигон" для начала рисования или "Загрузить GeoJSON" для импорта файла. Кликайте для добавления точек, двойной клик для завершения.
       </p>
-      <p><strong>Возможности:</strong> Геодезические измерения площади и длин сторон на сфероиде WGS84.</p>
+      <p><strong>Возможности:</strong> Геодезические измерения площади и длин сторон на сфероиде WGS84. Поддержка файлов GeoJSON с полигонами.</p>
       <div id="polygon-count">Нарисовано полигонов: 0</div>
     </div>
   </div>

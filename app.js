@@ -132,13 +132,13 @@ class GeodesicCalculator {
 class MeasurementFormatter {
     static formatArea(area, unit = AppState.units.area) {
         const conversions = {
-            'm2': () => area.toFixed(0) + ' м²',
+            'm2': () => area.toFixed(3) + ' м²',
             'ha': () => (area / 10000).toFixed(3) + ' га',
             'km2': () => (area / 1000000).toFixed(3) + ' км²',
             'auto': () => {
                 if (area > 1000000) return (area / 1000000).toFixed(3) + ' км²';
                 if (area > 10000) return (area / 10000).toFixed(3) + ' га';
-                return area.toFixed(0) + ' м²';
+                return area.toFixed(3) + ' м²';
             }
         };
 
@@ -294,6 +294,241 @@ class MeasurementManager {
                 });
             }
         });
+    }
+}
+
+// GeoJSON File Loader
+class GeoJSONLoader {
+    constructor(vectorSource, measurementManager) {
+        this.vectorSource = vectorSource;
+        this.measurementManager = measurementManager;
+    }
+
+    loadFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (event) => {
+                try {
+                    const geojsonData = JSON.parse(event.target.result);
+                    this.processGeoJSON(geojsonData);
+                    resolve(geojsonData);
+                } catch (error) {
+                    reject(new Error('Ошибка парсинга GeoJSON файла: ' + error.message));
+                }
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Ошибка чтения файла'));
+            };
+            
+            reader.readAsText(file);
+        });
+    }
+
+    detectProjection(geojsonData) {
+        // Check for CRS in GeoJSON
+        if (geojsonData.crs && geojsonData.crs.properties && geojsonData.crs.properties.name) {
+            const crsName = geojsonData.crs.properties.name;
+            
+            // Handle different CRS name formats
+            if (typeof crsName === 'string') {
+                // Extract EPSG code from various formats
+                const epsgMatch = crsName.match(/EPSG[:\s]*(\d+)/i);
+                if (epsgMatch) {
+                    return `EPSG:${epsgMatch[1]}`;
+                }
+                
+                // Check for common CRS names
+                const crsMapping = {
+                    'WGS84': 'EPSG:4326',
+                    'WGS 84': 'EPSG:4326',
+                    'GEOGRAPHIC': 'EPSG:4326',
+                    'WEB_MERCATOR': 'EPSG:3857',
+                    'SPHERICAL_MERCATOR': 'EPSG:3857'
+                };
+                
+                const upperCRS = crsName.toUpperCase();
+                for (const [key, value] of Object.entries(crsMapping)) {
+                    if (upperCRS.includes(key)) {
+                        return value;
+                    }
+                }
+            }
+        }
+
+        // Check coordinate values to guess projection
+        const coordinates = this.extractSampleCoordinates(geojsonData);
+        if (coordinates.length > 0) {
+            const projection = this.guessProjectionFromCoordinates(coordinates);
+            if (projection) {
+                return projection;
+            }
+        }
+
+        // Default to WGS84 if unable to determine
+        console.log('Unable to determine CRS, defaulting to EPSG:4326');
+        return 'EPSG:4326';
+    }
+
+    extractSampleCoordinates(geojsonData) {
+        const coordinates = [];
+        
+        const extractFromGeometry = (geometry) => {
+            if (!geometry || !geometry.coordinates) return;
+            
+            switch (geometry.type) {
+                case 'Point':
+                    coordinates.push(geometry.coordinates);
+                    break;
+                case 'LineString':
+                    coordinates.push(...geometry.coordinates);
+                    break;
+                case 'Polygon':
+                    coordinates.push(...geometry.coordinates[0]);
+                    break;
+                case 'MultiPolygon':
+                    geometry.coordinates.forEach(polygon => {
+                        coordinates.push(...polygon[0]);
+                    });
+                    break;
+            }
+        };
+
+        if (geojsonData.type === 'FeatureCollection') {
+            geojsonData.features.slice(0, 10).forEach(feature => {
+                extractFromGeometry(feature.geometry);
+            });
+        } else if (geojsonData.type === 'Feature') {
+            extractFromGeometry(geojsonData.geometry);
+        } else {
+            extractFromGeometry(geojsonData);
+        }
+
+        return coordinates.slice(0, 50); // Limit sample size
+    }
+
+    guessProjectionFromCoordinates(coordinates) {
+        let wgs84Count = 0;
+        let webMercatorCount = 0;
+        
+        coordinates.forEach(coord => {
+            const [x, y] = coord;
+            
+            // Check if coordinates are within WGS84 bounds
+            if (x >= -180 && x <= 180 && y >= -90 && y <= 90) {
+                wgs84Count++;
+            }
+            
+            // Check if coordinates are within Web Mercator bounds
+            if (Math.abs(x) <= 20037508.34 && Math.abs(y) <= 20048966.1) {
+                webMercatorCount++;
+                
+                // Additional check: Web Mercator values are typically large
+                if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+                    webMercatorCount += 2; // Extra weight for clearly projected coordinates
+                }
+            }
+        });
+
+        const total = coordinates.length;
+        const wgs84Ratio = wgs84Count / total;
+        const webMercatorRatio = webMercatorCount / total;
+
+        // If most coordinates fit WGS84 bounds and don't look projected
+        if (wgs84Ratio > 0.8 && webMercatorRatio < 0.3) {
+            return 'EPSG:4326';
+        }
+        
+        // If coordinates look like Web Mercator
+        if (webMercatorRatio > 0.8) {
+            return 'EPSG:3857';
+        }
+
+        // If unclear, check coordinate magnitude
+        const avgMagnitude = coordinates.reduce((sum, coord) => {
+            return sum + Math.abs(coord[0]) + Math.abs(coord[1]);
+        }, 0) / (coordinates.length * 2);
+
+        // Large values suggest projected coordinates
+        if (avgMagnitude > 1000) {
+            return 'EPSG:3857'; // Assume Web Mercator for large values
+        }
+
+        return null; // Unable to determine
+    }
+
+    processGeoJSON(geojsonData) {
+        const format = new ol.format.GeoJSON();
+        let features;
+
+        // Determine coordinate system from GeoJSON
+        const sourceProjection = this.detectProjection(geojsonData);
+        console.log('Detected projection:', sourceProjection);
+
+        try {
+            features = format.readFeatures(geojsonData, {
+                dataProjection: sourceProjection,
+                featureProjection: CONFIG.map.projection
+            });
+        } catch (error) {
+            throw new Error('Ошибка преобразования GeoJSON: ' + error.message);
+        }
+
+        // Filter only polygon features
+        const polygonFeatures = features.filter(feature => {
+            const geometry = feature.getGeometry();
+            return geometry instanceof ol.geom.Polygon || geometry instanceof ol.geom.MultiPolygon;
+        });
+
+        if (polygonFeatures.length === 0) {
+            throw new Error('В файле не найдено полигонов');
+        }
+
+        // Process MultiPolygon features
+        const processedFeatures = [];
+        polygonFeatures.forEach(feature => {
+            const geometry = feature.getGeometry();
+            
+            if (geometry instanceof ol.geom.MultiPolygon) {
+                // Split MultiPolygon into separate Polygon features
+                const polygons = geometry.getPolygons();
+                polygons.forEach(polygon => {
+                    const newFeature = new ol.Feature({
+                        geometry: polygon
+                    });
+                    // Copy properties from original feature
+                    const properties = feature.getProperties();
+                    Object.keys(properties).forEach(key => {
+                        if (key !== 'geometry') {
+                            newFeature.set(key, properties[key]);
+                        }
+                    });
+                    processedFeatures.push(newFeature);
+                });
+            } else {
+                processedFeatures.push(feature);
+            }
+        });
+
+        // Add features to the map
+        this.vectorSource.addFeatures(processedFeatures);
+
+        // Update polygon count
+        AppState.polygonCount += processedFeatures.length;
+        UIManager.updatePolygonCount();
+
+        // Create measurement overlays for each polygon
+        processedFeatures.forEach(feature => {
+            setTimeout(() => this.measurementManager.createOverlays(feature), 50);
+        });
+
+        // Show success message with projection info
+        const projectionInfo = sourceProjection !== 'EPSG:4326' ? 
+            ` (проекция: ${sourceProjection})` : '';
+        UIManager.showMessage(`Загружено ${processedFeatures.length} полигонов из GeoJSON${projectionInfo}`);
+        
+        return processedFeatures;
     }
 }
 
@@ -463,7 +698,7 @@ class UIManager {
     }
 
     static deactivateAllButtons() {
-        ['draw-polygon', 'edit-polygon'].forEach(id => {
+        ['draw-polygon', 'edit-polygon', 'load-geojson'].forEach(id => {
             this.deactivateButton(id);
         });
     }
@@ -568,7 +803,18 @@ class UIManager {
         // Button event listeners
         document.getElementById('draw-polygon').addEventListener('click', () => app.toggleDraw());
         document.getElementById('edit-polygon').addEventListener('click', () => app.toggleEdit());
+        document.getElementById('load-geojson').addEventListener('click', () => app.loadGeoJSON());
         document.getElementById('clear-all').addEventListener('click', () => app.clearAll());
+
+        // File input change event
+        document.getElementById('geojson-input').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                app.handleFileLoad(file);
+                // Reset input value so same file can be loaded again
+                event.target.value = '';
+            }
+        });
 
         // Unit selector event listeners
         document.getElementById('area-units').addEventListener('change', (event) => {
@@ -591,6 +837,8 @@ class UIManager {
                 'D': () => app.toggleDraw(),
                 'e': () => app.toggleEdit(),
                 'E': () => app.toggleEdit(),
+                'l': () => app.loadGeoJSON(),
+                'L': () => app.loadGeoJSON(),
                 'c': () => app.clearAll(),
                 'C': () => app.clearAll()
             };
@@ -617,6 +865,10 @@ class PolygonMeasurementApp {
             this.mapManager.getMap(),
             this.mapManager.getVectorSource(),
             this.mapManager.getVectorLayer(),
+            this.measurementManager
+        );
+        this.geoJSONLoader = new GeoJSONLoader(
+            this.mapManager.getVectorSource(),
             this.measurementManager
         );
 
@@ -659,6 +911,35 @@ class PolygonMeasurementApp {
 
     clearAll() {
         this.interactionManager.clearAll();
+    }
+
+    loadGeoJSON() {
+        const fileInput = document.getElementById('geojson-input');
+        fileInput.click();
+    }
+
+    handleFileLoad(file) {
+        if (!file) return;
+
+        // Check file type
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.geojson') && !fileName.endsWith('.json')) {
+            UIManager.showMessage('Поддерживаются только файлы .geojson и .json');
+            return;
+        }
+
+        // Show loading message
+        UIManager.showMessage('Загрузка файла...');
+
+        this.geoJSONLoader.loadFile(file)
+            .then((geojsonData) => {
+                // Success - message already shown in processGeoJSON
+                console.log('GeoJSON loaded successfully:', geojsonData);
+            })
+            .catch((error) => {
+                console.error('Error loading GeoJSON:', error);
+                UIManager.showMessage('Ошибка: ' + error.message);
+            });
     }
 
     cancelCurrentAction() {
