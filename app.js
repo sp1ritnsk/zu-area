@@ -468,7 +468,96 @@ class UIManager {
         });
     }
 
+    static toggleControlsPanel() {
+        const panel = document.getElementById('controls-panel');
+        const toggleBtn = document.getElementById('toggle-panel');
+        
+        panel.classList.toggle('collapsed');
+        
+        // Update toggle button icon
+        const isCollapsed = panel.classList.contains('collapsed');
+        const icon = toggleBtn.querySelector('svg path');
+        
+        if (isCollapsed) {
+            // Change to plus icon
+            icon.setAttribute('d', 'M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z');
+        } else {
+            // Change to hamburger icon
+            icon.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
+        }
+    }
+
+    static toggleInfoPanel() {
+        const panel = document.getElementById('info');
+        const toggleBtn = document.getElementById('toggle-info');
+        
+        panel.classList.toggle('collapsed');
+        
+        // Update info button icon
+        const isCollapsed = panel.classList.contains('collapsed');
+        const icon = toggleBtn.querySelector('svg path');
+        
+        if (isCollapsed) {
+            // Change to info icon
+            icon.setAttribute('d', 'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z');
+        } else {
+            // Change to close icon
+            icon.setAttribute('d', 'M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z');
+        }
+    }
+
+    static initMobileControls() {
+        // Auto-collapse panels on mobile on page load
+        if (window.innerWidth <= 768) {
+            const controlsPanel = document.getElementById('controls-panel');
+            const infoPanel = document.getElementById('info');
+            
+            controlsPanel.classList.add('collapsed');
+            infoPanel.classList.add('collapsed');
+            
+            // Set initial toggle button to plus icon
+            const toggleBtn = document.getElementById('toggle-panel');
+            const toggleIcon = toggleBtn.querySelector('svg path');
+            toggleIcon.setAttribute('d', 'M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z');
+            
+            // Set initial info button to info icon
+            const infoBtn = document.getElementById('toggle-info');
+            const infoIcon = infoBtn.querySelector('svg path');
+            infoIcon.setAttribute('d', 'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z');
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const controlsPanel = document.getElementById('controls-panel');
+            const infoPanel = document.getElementById('info');
+            
+            if (window.innerWidth > 768) {
+                // Desktop: always show controls panel
+                controlsPanel.classList.remove('collapsed');
+                // Desktop: keep info panel state as user set it
+            } else {
+                // Mobile: collapse panels if not already collapsed
+                if (!controlsPanel.classList.contains('collapsed')) {
+                    this.toggleControlsPanel();
+                }
+                if (!infoPanel.classList.contains('collapsed')) {
+                    this.toggleInfoPanel();
+                }
+            }
+        });
+    }
+
     static setupEventListeners(app) {
+        // Toggle panel button
+        document.getElementById('toggle-panel').addEventListener('click', () => {
+            this.toggleControlsPanel();
+        });
+
+        // Toggle info panel button
+        document.getElementById('toggle-info').addEventListener('click', () => {
+            this.toggleInfoPanel();
+        });
+
         // Button event listeners
         document.getElementById('draw-polygon').addEventListener('click', () => app.toggleDraw());
         document.getElementById('edit-polygon').addEventListener('click', () => app.toggleEdit());
@@ -529,6 +618,7 @@ class PolygonMeasurementApp {
 
     init() {
         UIManager.setupEventListeners(this);
+        UIManager.initMobileControls();
         this.setupMapClickHandler();
     }
 
