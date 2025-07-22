@@ -1,0 +1,191 @@
+/* Global styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f0f0;
+    overflow: hidden;
+}
+
+/* Map container */
+.map {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* Controls panel */
+#controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+#controls button {
+    margin: 5px 5px 5px 0;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007acc;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#controls button svg {
+    width: 20px;
+    height: 20px;
+}
+
+#controls button:hover {
+    background-color: #005a9e;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+}
+
+#controls button:active {
+    transform: translateY(0);
+}
+
+#controls button.active {
+    background-color: #ff6b35;
+}
+
+#controls button.active:hover {
+    background-color: #e55a2b;
+}
+
+/* Units section */
+.units-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.units-section label {
+    display: block;
+    margin: 8px 0 4px 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+}
+
+.units-section select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.units-section select:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}
+
+/* Info panel */
+#info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    max-width: 300px;
+}
+
+#info p {
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+#polygon-count {
+    font-weight: bold;
+    color: #007acc;
+    font-size: 14px;
+}
+
+/* Fullscreen styles */
+.ol-full-screen {
+    top: 20px;
+    right: 20px;
+}
+
+/* Custom OpenLayers control styling */
+.ol-control {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 4px !important;
+}
+
+.ol-control button {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 4px !important;
+}
+
+.ol-control button:hover {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Measurement labels */
+.measurement-label {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    cursor: default;
+}
+
+.measurement-label.area-label {
+    transform: translate(-50%, -50%);
+}
+
+.measurement-label.length-label {
+    transform: translate(-50%, -50%);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #controls {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        padding: 10px;
+    }
+    
+    #controls button {
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    #info {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+}
