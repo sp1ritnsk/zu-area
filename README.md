@@ -4,7 +4,7 @@
 
 ## 🎯 Live Demo
 
-**[View Live Demo](https://yourusername.github.io/zu-area/)**
+**[View Live Demo](https://sp1ritnsk.github.io/zu-area/)**
 
 ## ✨ Features
 
