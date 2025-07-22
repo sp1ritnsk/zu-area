@@ -507,7 +507,7 @@ class UIManager {
     }
 
     static initMobileControls() {
-        // Auto-collapse panels on mobile on page load
+        // Auto-collapse panels only on mobile on page load
         if (window.innerWidth <= 768) {
             const controlsPanel = document.getElementById('controls-panel');
             const infoPanel = document.getElementById('info');
@@ -524,6 +524,13 @@ class UIManager {
             const infoBtn = document.getElementById('toggle-info');
             const infoIcon = infoBtn.querySelector('svg path');
             infoIcon.setAttribute('d', 'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z');
+        } else {
+            // On desktop, ensure panels are not collapsed
+            const controlsPanel = document.getElementById('controls-panel');
+            const infoPanel = document.getElementById('info');
+            
+            controlsPanel.classList.remove('collapsed');
+            infoPanel.classList.remove('collapsed');
         }
         
         // Handle window resize
@@ -532,11 +539,11 @@ class UIManager {
             const infoPanel = document.getElementById('info');
             
             if (window.innerWidth > 768) {
-                // Desktop: always show controls panel
+                // Desktop: always show panels
                 controlsPanel.classList.remove('collapsed');
-                // Desktop: keep info panel state as user set it
+                infoPanel.classList.remove('collapsed');
             } else {
-                // Mobile: collapse panels if not already collapsed
+                // Mobile: collapse panels if not already collapsed and first time switching
                 if (!controlsPanel.classList.contains('collapsed')) {
                     this.toggleControlsPanel();
                 }

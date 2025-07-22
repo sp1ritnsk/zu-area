@@ -79,7 +79,7 @@ body {
     transform-origin: top right;
 }
 
-/* Collapsed state */
+/* Collapsed state - only for mobile */
 .controls-panel.collapsed {
     opacity: 0 !important;
     transform: scale(0.8) translateY(-10px) !important;
@@ -322,32 +322,64 @@ body {
 }
 
 @media (min-width: 769px) {
-    /* Hide toggle button on desktop */
-    .toggle-btn {
-        display: none;
+    /* Hide toggle buttons on desktop */
+    .toggle-btn, .info-btn {
+        display: none !important;
     }
     
-    /* Show info button on desktop */
-    .info-btn {
-        display: flex;
-    }
-    
-    /* Always show controls panel on desktop */
-    .controls-panel {
+    /* Always show controls panel on desktop - override collapsed state */
+    .controls-panel.collapsed {
         opacity: 1 !important;
         transform: none !important;
         pointer-events: auto !important;
         max-height: none !important;
+        min-height: auto !important;
         padding: 15px !important;
+        margin: auto !important;
         overflow: visible !important;
+        border: auto !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        visibility: visible !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 8px !important;
+        backdrop-filter: blur(10px) !important;
     }
     
-    /* Info panel behavior on desktop */
-    .info-panel:not(.collapsed) {
-        opacity: 1;
-        transform: none;
-        pointer-events: auto;
-        max-height: none;
-        overflow: visible;
+    .controls-panel.collapsed * {
+        opacity: 1 !important;
+        visibility: visible !important;
+        max-height: none !important;
+        padding: auto !important;
+        margin: auto !important;
+    }
+    
+    /* Always show info panel on desktop - override collapsed state */
+    .info-panel.collapsed {
+        opacity: 1 !important;
+        transform: none !important;
+        pointer-events: auto !important;
+        max-height: none !important;
+        min-height: auto !important;
+        padding: auto !important;
+        margin: auto !important;
+        overflow: visible !important;
+        border: auto !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        visibility: visible !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 8px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    .info-panel.collapsed * {
+        opacity: 1 !important;
+        visibility: visible !important;
+        max-height: none !important;
+        padding: auto !important;
+        margin: auto !important;
+    }
+    
+    .info-panel.collapsed .info-content {
+        padding: 15px !important;
     }
 }
